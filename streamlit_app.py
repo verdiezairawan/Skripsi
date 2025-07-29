@@ -6,7 +6,7 @@ import requests
 import joblib
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
-from tcn import TCN # -> Tambahkan impor untuk TCN
+from tcn import TCN
 
 # ==============================================================================
 # Konfigurasi Halaman Streamlit
@@ -20,17 +20,17 @@ st.set_page_config(
 
 # ==============================================================================
 # Fungsi untuk Memuat Model dan Scaler
-# Menggunakan cache agar tidak perlu memuat ulang setiap kali ada interaksi
 # ==============================================================================
 @st.cache_resource
 def load_model_and_scaler():
     """Memuat model Keras dan scaler dari file."""
     try:
-        # -> Beri tahu Keras tentang layer kustom 'TCN' saat memuat model
+        # Beri tahu Keras tentang layer kustom 'TCN' saat memuat model
         custom_objects = {'TCN': TCN}
         model = tf.keras.models.load_model(
             'model_tcn_bilstm_gru.h5',
-            custom_objects=custom_objects
+            custom_objects=custom_objects,
+            compile=False  # Tidak perlu compile model saat hanya untuk prediksi
         )
         scaler = joblib.load('scaler_btc.save')
         return model, scaler
@@ -41,7 +41,7 @@ def load_model_and_scaler():
 # ==============================================================================
 # Fungsi untuk Mengambil Data dari CoinGecko API
 # ==============================================================================
-@st.cache_data(ttl=60) # Cache data selama 60 detik
+@st.cache_data(ttl=600) # Cache data selama 10 menit untuk mengurangi panggilan API
 def get_coingecko_data(days=90):
     """Mengambil data OHLCV Bitcoin dari CoinGecko untuk beberapa hari terakhir."""
     url = f"https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days={days}"
@@ -56,10 +56,11 @@ def get_coingecko_data(days=90):
         df = df.set_index('Date')
         df = df[['open', 'high', 'low', 'close']]
         df.columns = ['Open', 'High', 'Low', 'Close']
-        return df
+        return df, None # Mengembalikan data dan tidak ada error
     except requests.exceptions.RequestException as e:
-        st.error(f"Gagal mengambil data dari CoinGecko: {e}")
-        return None
+        error_message = f"Gagal mengambil data dari CoinGecko: {e}"
+        st.error(error_message)
+        return None, error_message # Mengembalikan None dan pesan error
 
 # ==============================================================================
 # Judul dan Sidebar Aplikasi
@@ -82,10 +83,23 @@ with st.sidebar:
 # Memuat Model dan Data
 # ==============================================================================
 model, scaler = load_model_and_scaler()
-data = get_coingecko_data(days=days_to_fetch)
+data, api_error = get_coingecko_data(days=days_to_fetch)
 
-if model is not None and scaler is not None and data is not None:
-    
+# ==============================================================================
+# Logika Utama Aplikasi
+# ==============================================================================
+# Cek error sebelum melanjutkan
+if api_error:
+    st.warning(
+        "Terjadi masalah saat mengambil data harga dari CoinGecko. "
+        "Ini mungkin karena terlalu banyak permintaan ke API. "
+        "Silakan tunggu beberapa saat sebelum mencoba lagi."
+    )
+elif model is None or scaler is None:
+    st.warning("Tidak dapat melanjutkan karena model atau scaler gagal dimuat.")
+elif data is None or data.empty:
+     st.warning("Data tidak tersedia atau kosong. Tidak dapat melanjutkan.")
+else:
     # ==========================================================================
     # Tampilkan Data Real-time
     # ==========================================================================
@@ -178,6 +192,3 @@ if model is not None and scaler is not None and data is not None:
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
-else:
-    st.warning("Tidak dapat melanjutkan karena model, scaler, atau data tidak tersedia.")
