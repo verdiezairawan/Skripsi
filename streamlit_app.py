@@ -6,6 +6,7 @@ import requests
 import joblib
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
+from tcn import TCN # -> Tambahkan impor untuk TCN
 
 # ==============================================================================
 # Konfigurasi Halaman Streamlit
@@ -25,7 +26,12 @@ st.set_page_config(
 def load_model_and_scaler():
     """Memuat model Keras dan scaler dari file."""
     try:
-        model = tf.keras.models.load_model('model_tcn_bilstm_gru.h5')
+        # -> Beri tahu Keras tentang layer kustom 'TCN' saat memuat model
+        custom_objects = {'TCN': TCN}
+        model = tf.keras.models.load_model(
+            'model_tcn_bilstm_gru.h5',
+            custom_objects=custom_objects
+        )
         scaler = joblib.load('scaler_btc.save')
         return model, scaler
     except Exception as e:
