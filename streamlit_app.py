@@ -116,9 +116,9 @@ else:
         predicted_price = scaler.inverse_transform(predicted_price_scaled)
         last_close_price = data['Close'].iloc[-1]
         change_percent = ((predicted_price[0][0] - last_close_price) / last_close_price) * 100
-        
-    st.subheader("Hasil Prediksi Harga Penutupan Bitcoin untuk Besok")
+
     tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+    st.subheader("Hasil Prediksi Harga Penutupan")
     st.metric(
         label=f"Prediksi untuk {tomorrow}",
         value=f"${predicted_price[0][0]:,.2f}",
