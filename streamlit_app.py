@@ -13,7 +13,7 @@ import os
 # Konfigurasi Halaman Streamlit
 # ==============================================================================
 st.set_page_config(
-    page_title="Prediksi Harga Bitcoin Real-time",
+    page_title="Prediksi Harga Bitcoin",
     page_icon="₿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -76,7 +76,7 @@ def get_coingecko_data(days=365): # -> Nilai default diubah menjadi 365
 # Judul dan Sidebar Aplikasi
 # ==============================================================================
 st.title("📈 Prediksi Harga Bitcoin Real-time")
-st.markdown("Aplikasi ini menampilkan harga OHLCV Bitcoin dan memprediksi harga penutupan untuk hari berikutnya menggunakan model TCN-BiLSTM-GRU.")
+st.markdown("Aplikasi ini menampilkan harga OHLC Bitcoin dan memprediksi harga penutupan untuk hari berikutnya menggunakan model TCN-BiLSTM-GRU.")
 
 with st.sidebar:
     st.header("Pengaturan")
